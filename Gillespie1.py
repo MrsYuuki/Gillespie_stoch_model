@@ -48,15 +48,17 @@ def open_excel_file(kp_av_in_s):
     df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq', 'Length (in aa)'])
     df = df.rename(columns={'Gene Name': 'Gene', 'Life time_RNAseq':'Lifetime','Length (in aa)' : 'lengthaa'})
     for index, rows in df.iterrows():
-        if rows.Lifetime != "NaN" and rows.Mean_RNAseq != 'NaN' and rows.lengthaa != '-':
-            kp = float(rows.lengthaa) / (kp_av_in_s * 60)
-            kdm = 1 / float(rows.Lifetime)
-            km = float(rows.Mean_RNAseq) * kdm
-            gene_dict[rows.Gene] = [km, kp, kdm, kdp]
-            i += 1
+        if rows.isnull().values.any() == False:
+            if rows.lengthaa != '-':
+                kp = float(rows.lengthaa) / (kp_av_in_s * 60)
+                kdm = 1 / float(rows.Lifetime)
+                km = float(rows.Mean_RNAseq) * kdm
+                gene_dict[rows.Gene] = [km, kp, kdm, kdp]
+        i += 1
         if i == 49:
             break
     return gene_dict
+
 
 def simple_simulation(gene_name, data_set):
     smod2 = stochpy.SSA(IsInteractive=False)
@@ -99,7 +101,11 @@ def ergodicity_check(gene_name, data_set):                          #Do poprawy
 
 
 data = open_excel_file(8)
+print len(data.keys())
 
+for gene in data.keys():
+    print(gene, data[gene])
+    simple_simulation(gene, data)
 
 
 
