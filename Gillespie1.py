@@ -4,6 +4,10 @@ import mpmath
 import pandas as pd
 import matplotlib.pyplot as mplt
 
+from bioservices import UniProt         # Import bioservices module, to run remote UniProt queries
+
+
+
 def GammaDis(km, kp, kdm, kdp):         #Funkcja do obliczania rozkladu Gamma
     xv = np.linspace(0,400,1000)
     yv = []
@@ -40,24 +44,41 @@ def percent(last_values):
     return x_value,y_value
 
 
-def open_excel_file(kp_av_in_s):
+def open_excel_file():
     i = 1
     gene_dict = {}
     kdp = 1.0 / 150
     file = pd.read_excel(r'F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
-    df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq', 'Length (in aa)'])
-    df = df.rename(columns={'Gene Name': 'Gene', 'Life time_RNAseq':'Lifetime','Length (in aa)' : 'lengthaa'})
+    df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq'])
+    df = df.rename(columns={'Gene Name': 'Gene', 'Life time_RNAseq':'Lifetime'})
     for index, rows in df.iterrows():
         if rows.isnull().values.any() == False:
-            if rows.lengthaa != '-':
-                kp = float(rows.lengthaa) / (kp_av_in_s * 60)
-                kdm = 1 / float(rows.Lifetime)
-                km = float(rows.Mean_RNAseq) * kdm
-                gene_dict[rows.Gene] = [km, kp, kdm, kdp]
-        i += 1
-        if i == 49:
-            break
+            gene_dict[rows.Gene] = [rows.Mean_RNAseq, rows.Lifetime]
     return gene_dict
+
+
+def get_sequences_lengths(gene_dict):           # Get length of protein (E.Coli) from first found hit in UniProt database.
+    service = UniProt()
+    length = []
+    for gene in gene_dict.keys():
+        query = gene                            # Build a query string
+        result = service.search(query)          # Send the query to UniProt, and catch the search result in a variable
+        result = result.split("\n")
+        for i in result:
+            i = i.split("\t")
+            tmp = i[5].split()
+            if "coli" in tmp:
+                length.append(i[6] + ",")
+                print i[6]
+                break
+    return length
+
+
+def count_parameters(translation_rate):       # Do poprawy
+    kp = float(rows.lengthaa) / (kp_av_in_s * 60)
+    kdm = 1 / float(rows.Lifetime)
+    km = float(rows.Mean_RNAseq) * kdm
+    gene_dict[rows.Gene] = [km, kp, kdm, kdp]
 
 
 def simple_simulation(gene_name, data_set):
@@ -102,18 +123,23 @@ def ergodicity_check(gene_name, data_set):                          #Do poprawy
     stochpy.plt.step(x,y, color='r')
     stochpy.plt.show()
 
-translation_rate = 8.0
 
-data = open_excel_file(translation_rate)
+
+data = open_excel_file()
 print len(data.keys())
+length = get_sequences_lengths(data)
+file = open('F:\Studia\Gillespie_stoch_model\lengths.txt', 'w')
+file.writelines(length)
 
+"""
 for gene in data.keys():
     print(gene, data[gene])
     simple_simulation(gene, data)
+"""
+import io
 
-
-
-
+# Import Seaborn for graphics and plotting
+import seaborn as sns
 
 
 
