@@ -73,12 +73,16 @@ def simple_simulation(gene_name, data_set):
 
     smod2.PlotSpeciesTimeSeries()
     stochpy.plt.title("PlotSpecies, gene %s" % gene_name)
+    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for gene\PlotSpecies %s.png" % gene_name, format='png')
     stochpy.plt.show()
+
 
     smod2.PlotSpeciesDistributions(species2plot='P')
     stochpy.plt.step(x, y, color='r')
     stochpy.plt.title("Histogram of protein, gene %s" % gene_name)
+    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\Histogram of protein for genes\Histogram %s.png" % gene_name, format='png')
     stochpy.plt.show()
+
 
 def ergodicity_check(gene_name, data_set):                          #Do poprawy
     smod = stochpy.SSA(IsInteractive=False)
@@ -94,19 +98,18 @@ def ergodicity_check(gene_name, data_set):                          #Do poprawy
 
     last_val = Last_values_ofTrajectories(trajectories_number, smod)  # Proba plotowania histogramu po osttanich wartosciach w trajektoriach.
     x, y = percent(last_val)
-    smod.PlotSpeciesDistributions(species2plot='P')  # Dofitowanie wykresu rozkladu Gamma do histogramu ilosci bialka.
+    smod.PlotSpeciesDistributions(species2plot='P')
     stochpy.plt.step(x,y, color='r')
     stochpy.plt.show()
 
+translation_rate = 8.0
 
-
-data = open_excel_file(8)
+data = open_excel_file(translation_rate)
 print len(data.keys())
 
 for gene in data.keys():
     print(gene, data[gene])
     simple_simulation(gene, data)
-
 
 
 
