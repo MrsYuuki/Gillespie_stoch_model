@@ -2,10 +2,7 @@ import stochpy
 import numpy as np
 import mpmath
 import pandas as pd
-import matplotlib.pyplot as mplt
-
 from bioservices import UniProt         # Import bioservices module, to run remote UniProt queries
-
 
 
 def GammaDis(km, kp, kdm, kdp):         #Funkcja do obliczania rozkladu Gamma
@@ -17,7 +14,7 @@ def GammaDis(km, kp, kdm, kdp):         #Funkcja do obliczania rozkladu Gamma
         p = x**(a-1)*np.exp(-x/b)/((b**a)*mpmath.mp.gamma(a))
         yv.append(p)
     print "Srednia czestosc burstow: ",a, " Sredni rozmiar burstow: ",b
-    return xv, yv
+    return xv, yv, b
 
 
 def Last_values_ofTrajectories(trajectories, model):       #Funkkcja wydobywajace ostatnie wartosci natezenia bialek w trajektorii.
@@ -57,6 +54,12 @@ def open_excel_file():
     return gene_dict
 
 
+def open_sequences_length_file():               # Opening existing file which contains protein sequences lengths from UniProt.
+    f = open('F:\Studia\Gillespie_stoch_model\lengths.txt', 'r')
+    lengths = f.read().split(",")[:-1]
+    return lengths
+
+
 def get_sequences_lengths(gene_dict):           # Get length of protein (E.Coli) from first found hit in UniProt database.
     service = UniProt()
     length = []
@@ -71,17 +74,26 @@ def get_sequences_lengths(gene_dict):           # Get length of protein (E.Coli)
                 length.append(i[6] + ",")
                 print i[6]
                 break
+    file = open('F:\Studia\Gillespie_stoch_model\lengths.txt', 'w')
+    file.writelines(length)
     return length
 
 
-def count_parameters(translation_rate):       # Do poprawy
-    kp = float(rows.lengthaa) / (kp_av_in_s * 60)
-    kdm = 1 / float(rows.Lifetime)
-    km = float(rows.Mean_RNAseq) * kdm
-    gene_dict[rows.Gene] = [km, kp, kdm, kdp]
+def count_parameters(gene_dict, sequences_lengths, average_translation_rate):           #Funkcja pomocnicza pomagajaca policzyc parametry symulacji km,kp,kdm,kdp.
+    parameters_dict = {}
+    gene_length_id = 0
+    for gene in gene_dict.keys():
+        kp = float(sequences_lengths[gene_length_id]) / (average_translation_rate * 60)
+        kdm = 1 / float(gene_dict[gene][1])
+        km = float(gene_dict[gene][0]) * kdm
+        kdp = 1.0/150
+        parameters_dict[gene] = [km, kp, kdm, kdp]
+        gene_length_id += 1
+    return parameters_dict
 
 
-def simple_simulation(gene_name, data_set):
+def simple_simulation(gene_name, data_set):                         #Funkcja przeprowadzajaca 1 symulacje dla danego genu.
+    x, y, burst_size = GammaDis(data_set[gene_name][0], data_set[gene_name][1], data_set[gene_name][2],data_set[gene_name][3])
     smod2 = stochpy.SSA(IsInteractive=False)
     smod2.Model("Double_step.psc")
     smod2.Model(model_file="Double_step.psc", dir="C:\Stochpy\pscmodels")
@@ -89,18 +101,20 @@ def simple_simulation(gene_name, data_set):
     smod2.ChangeParameter("kp", data_set[gene_name][1])
     smod2.ChangeParameter("kdm", data_set[gene_name][2])
     smod2.ChangeParameter("kdp", data_set[gene_name][3])
-    smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=9000)
-    x, y = GammaDis(data_set[gene_name][0], data_set[gene_name][1], data_set[gene_name][2], data_set[gene_name][3])
+    if burst_size >= 6:
+        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=20000)
+        print("*")
+    else:
+        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=9000)
 
     smod2.PlotSpeciesTimeSeries()
-    stochpy.plt.title("PlotSpecies, gene %s" % gene_name)
+    stochpy.plt.title("PlotSpecies, gene %s, b=%s" % (gene_name, burst_size))
     stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for gene\PlotSpecies %s.png" % gene_name, format='png')
     stochpy.plt.show()
 
-
     smod2.PlotSpeciesDistributions(species2plot='P')
     stochpy.plt.step(x, y, color='r')
-    stochpy.plt.title("Histogram of protein, gene %s" % gene_name)
+    stochpy.plt.title("Histogram of protein, gene %s, b=%s" % (gene_name, burst_size))
     stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\Histogram of protein for genes\Histogram %s.png" % gene_name, format='png')
     stochpy.plt.show()
 
@@ -124,22 +138,15 @@ def ergodicity_check(gene_name, data_set):                          #Do poprawy
     stochpy.plt.show()
 
 
+average_translation_rate = 8.0
+data = open_excel_file()                                        # Read data from excel table
+sequences_length = open_sequences_length_file()                 # Read data from sequence's lengths file
+gene_parameters_dict = count_parameters(data, sequences_length, average_translation_rate)       # Create dictionary that contains name of gene and parameters for simulation
 
-data = open_excel_file()
-print len(data.keys())
-length = get_sequences_lengths(data)
-file = open('F:\Studia\Gillespie_stoch_model\lengths.txt', 'w')
-file.writelines(length)
 
-"""
-for gene in data.keys():
-    print(gene, data[gene])
-    simple_simulation(gene, data)
-"""
-import io
+for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
+    simple_simulation(gene, gene_parameters_dict)
 
-# Import Seaborn for graphics and plotting
-import seaborn as sns
 
 
 
