@@ -5,8 +5,8 @@ import pandas as pd
 from bioservices import UniProt         # Import bioservices module, to run remote UniProt queries
 
 
-def GammaDis(km, kp, kdm, kdp):         #Funkcja do obliczania rozkladu Gamma
-    xv = np.linspace(0,400,1000)
+def GammaDis(km, kp, kdm, kdp, max_val):         #Funkcja do obliczania rozkladu Gamma
+    xv = np.linspace(0,max_val,1000)
     yv = []
     a = km/kdp
     b = kp/kdm
@@ -14,7 +14,7 @@ def GammaDis(km, kp, kdm, kdp):         #Funkcja do obliczania rozkladu Gamma
         p = x**(a-1)*np.exp(-x/b)/((b**a)*mpmath.mp.gamma(a))
         yv.append(p)
     print "Srednia czestosc burstow: ",a, " Sredni rozmiar burstow: ",b
-    return xv, yv, b
+    return xv, yv
 
 
 def Last_values_ofTrajectories(trajectories, model):       #Funkkcja wydobywajace ostatnie wartosci natezenia bialek w trajektorii.
@@ -93,7 +93,6 @@ def count_parameters(gene_dict, sequences_lengths, average_translation_rate):   
 
 
 def simple_simulation(gene_name, data_set):                         #Funkcja przeprowadzajaca 1 symulacje dla danego genu.
-    x, y, burst_size = GammaDis(data_set[gene_name][0], data_set[gene_name][1], data_set[gene_name][2],data_set[gene_name][3])
     smod2 = stochpy.SSA(IsInteractive=False)
     smod2.Model("Double_step.psc")
     smod2.Model(model_file="Double_step.psc", dir="C:\Stochpy\pscmodels")
@@ -101,29 +100,52 @@ def simple_simulation(gene_name, data_set):                         #Funkcja prz
     smod2.ChangeParameter("kp", data_set[gene_name][1])
     smod2.ChangeParameter("kdm", data_set[gene_name][2])
     smod2.ChangeParameter("kdp", data_set[gene_name][3])
-    if burst_size >= 6:
-        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=20000)
-        print("*")
-    else:
-        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=9000)
+    burst_size = float(data_set[gene_name][1])/float(data_set[gene_name][2])
 
+    if burst_size >= 6:
+        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=40000)
+    else:
+        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=18000)
+
+    max_val = 0
+    for i in smod2.data_stochsim.getAllSimData():
+        if i[3] >= max_val:
+            max_val = i[3]
+    max_val = int(mpmath.ceil(max_val))
+
+    x, y = GammaDis(data_set[gene_name][0], data_set[gene_name][1], data_set[gene_name][2], data_set[gene_name][3], max_val)
     smod2.PlotSpeciesTimeSeries()
     stochpy.plt.title("PlotSpecies, gene %s, b=%s" % (gene_name, burst_size))
-    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for gene\PlotSpecies %s.png" % gene_name, format='png')
+    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for gene,more steps\PlotSpecies %s.png" % gene_name, format='png')
     stochpy.plt.show()
+
+
 
     smod2.PlotSpeciesDistributions(species2plot='P')
     stochpy.plt.step(x, y, color='r')
     stochpy.plt.title("Histogram of protein, gene %s, b=%s" % (gene_name, burst_size))
-    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\Histogram of protein for genes\Histogram %s.png" % gene_name, format='png')
+    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\Histogram of protein for genes,more steps\Histogram %s.png" % gene_name, format='png')
     stochpy.plt.show()
 
 
-def ergodicity_check(gene_name, data_set):                          #Do poprawy
+def ergodicity_check(gene_name, data_set):                      #Do poprawy
     smod = stochpy.SSA(IsInteractive=False)
     smod.Model("Double_step.psc")
     smod.Model(model_file="Double_step.psc", dir="C:\Stochpy\pscmodels")
+    smod.ChangeParameter("km", data_set[gene_name][0])
+    smod.ChangeParameter("kp", data_set[gene_name][1])
+    smod.ChangeParameter("kdm", data_set[gene_name][2])
+    smod.ChangeParameter("kdp", data_set[gene_name][3])
     smod.DoStochSim(method="direct", trajectories=3000, mode="time", end=100)
+
+    smod2 = stochpy.SSA(IsInteractive=False)
+    smod2.Model("Double_step.psc")
+    smod2.Model(model_file="Double_step.psc", dir="C:\Stochpy\pscmodels")
+    smod2.ChangeParameter("km", data_set[gene_name][0])
+    smod2.ChangeParameter("kp", data_set[gene_name][1])
+    smod2.ChangeParameter("kdm", data_set[gene_name][2])
+    smod2.ChangeParameter("kdp", data_set[gene_name][3])
+    smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=3000)
 
     trajectories_number = smod.data_stochsim.simulation_trajectory
     smod.PlotSpeciesTimeSeries()
@@ -143,10 +165,10 @@ data = open_excel_file()                                        # Read data from
 sequences_length = open_sequences_length_file()                 # Read data from sequence's lengths file
 gene_parameters_dict = count_parameters(data, sequences_length, average_translation_rate)       # Create dictionary that contains name of gene and parameters for simulation
 
-
+"""
 for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
     simple_simulation(gene, gene_parameters_dict)
-
-
+"""
+simple_simulation("cspE", gene_parameters_dict)
 
 
