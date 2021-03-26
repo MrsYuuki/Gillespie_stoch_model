@@ -11,7 +11,7 @@ def GammaDis(km, kp, kdm, kdp, max_val):         #Funkcja do obliczania rozkladu
     a = km/kdp
     b = kp/kdm
     for x in xv:
-        p = x**(a-1)*np.exp(-x/b)/((b**a)*mpmath.mp.gamma(a))
+        p = x**(a-1)*mpmath.exp(-x/b)/((b**a)*mpmath.mp.gamma(a))
         yv.append(p)
     print "Srednia czestosc burstow: ",a, " Sredni rozmiar burstow: ",b
     return xv, yv
@@ -103,9 +103,9 @@ def simple_simulation(gene_name, data_set):                         #Funkcja prz
     burst_size = float(data_set[gene_name][1])/float(data_set[gene_name][2])
 
     if burst_size >= 6:
-        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=40000)
+        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=60000)
     else:
-        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=18000)
+        smod2.DoStochSim(method="direct", trajectories=1, mode="time", end=27000)
 
     max_val = 0
     for i in smod2.data_stochsim.getAllSimData():
@@ -118,8 +118,6 @@ def simple_simulation(gene_name, data_set):                         #Funkcja prz
     stochpy.plt.title("PlotSpecies, gene %s, b=%s" % (gene_name, burst_size))
     stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for gene,more steps\PlotSpecies %s.png" % gene_name, format='png')
     stochpy.plt.show()
-
-
 
     smod2.PlotSpeciesDistributions(species2plot='P')
     stochpy.plt.step(x, y, color='r')
@@ -165,10 +163,9 @@ data = open_excel_file()                                        # Read data from
 sequences_length = open_sequences_length_file()                 # Read data from sequence's lengths file
 gene_parameters_dict = count_parameters(data, sequences_length, average_translation_rate)       # Create dictionary that contains name of gene and parameters for simulation
 
-"""
+
 for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
     simple_simulation(gene, gene_parameters_dict)
-"""
-simple_simulation("cspE", gene_parameters_dict)
+
 
 
