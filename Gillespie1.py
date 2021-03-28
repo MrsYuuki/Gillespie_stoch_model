@@ -94,7 +94,7 @@ def count_parameters(gene_dict, sequences_lengths, average_translation_rate):   
     return parameters_dict
 
 
-def lengths_to_excel(gene_parameters_list, genel_list):
+def kp1_to_excel(gene_parameters_list, genel_list):
     column = []
     i = 0
     file = pd.read_excel(r'F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
@@ -179,7 +179,7 @@ average_translation_rate = 8.0
 data, genel_list = open_excel_file()                                        # Read data from excel table
 sequences_length = open_sequences_length_file()                 # Read data from sequence's lengths file
 gene_parameters_dict = count_parameters(data, sequences_length, average_translation_rate)       # Create dictionary that contains name of gene and parameters for simulation
-lengths_to_excel(gene_parameters_dict, genel_list)
+kp1_to_excel(gene_parameters_dict, genel_list)
 
 #for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
  #   simple_simulation(gene, gene_parameters_dict)
