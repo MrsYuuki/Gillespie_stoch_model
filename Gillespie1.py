@@ -42,16 +42,18 @@ def percent(last_values):
 
 
 def open_excel_file():
-    i = 1
     gene_dict = {}
-    kdp = 1.0 / 150
+    gene_list = {}
     file = pd.read_excel(r'F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
     df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq'])
     df = df.rename(columns={'Gene Name': 'Gene', 'Life time_RNAseq':'Lifetime'})
     for index, rows in df.iterrows():
         if rows.isnull().values.any() == False:
             gene_dict[rows.Gene] = [rows.Mean_RNAseq, rows.Lifetime]
-    return gene_dict
+            gene_list[rows.Gene] = True
+        else:
+            gene_list[rows.Gene] = False
+    return gene_dict, gene_list
 
 
 def open_sequences_length_file():               # Opening existing file which contains protein sequences lengths from UniProt.
@@ -90,6 +92,21 @@ def count_parameters(gene_dict, sequences_lengths, average_translation_rate):   
         parameters_dict[gene] = [km, kp, kdm, kdp]
         gene_length_id += 1
     return parameters_dict
+
+
+def lengths_to_excel(gene_parameters_list, genel_list):
+    column = []
+    i = 0
+    file = pd.read_excel(r'F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
+    df = pd.DataFrame(file)
+    for val in genel_list.keys():
+        if genel_list[val] is False:
+            column.append("")
+        else:
+            column.append(gene_parameters_list[val][1])
+            i += 1
+    df['kp1'] = column
+    df.to_excel('F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
 
 
 def simple_simulation(gene_name, data_set):                         #Funkcja przeprowadzajaca 1 symulacje dla danego genu.
@@ -159,13 +176,13 @@ def ergodicity_check(gene_name, data_set):                      #Do poprawy
 
 
 average_translation_rate = 8.0
-data = open_excel_file()                                        # Read data from excel table
+data, genel_list = open_excel_file()                                        # Read data from excel table
 sequences_length = open_sequences_length_file()                 # Read data from sequence's lengths file
 gene_parameters_dict = count_parameters(data, sequences_length, average_translation_rate)       # Create dictionary that contains name of gene and parameters for simulation
+lengths_to_excel(gene_parameters_dict, genel_list)
 
-
-for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
-    simple_simulation(gene, gene_parameters_dict)
+#for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
+ #   simple_simulation(gene, gene_parameters_dict)
 
 
 
