@@ -2,6 +2,7 @@ import stochpy
 import numpy as np
 import mpmath
 import pandas as pd
+import matplotlib.pyplot as mplt
 from bioservices import UniProt         # Import bioservices module, to run remote UniProt queries
 
 
@@ -45,11 +46,11 @@ def open_excel_file():
     gene_dict = {}
     gene_list = {}
     file = pd.read_excel(r'F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
-    df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq'])
+    df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq', 'Mean_Protein'])
     df = df.rename(columns={'Gene Name': 'Gene', 'Life time_RNAseq':'Lifetime'})
     for index, rows in df.iterrows():
         if rows.isnull().values.any() == False:
-            gene_dict[rows.Gene] = [rows.Mean_RNAseq, rows.Lifetime]
+            gene_dict[rows.Gene] = [rows.Mean_RNAseq, rows.Lifetime, rows.Mean_Protein]
             gene_list[rows.Gene] = True
         else:
             gene_list[rows.Gene] = False
@@ -74,21 +75,24 @@ def get_sequences_lengths(gene_dict):           # Get length of protein (E.Coli)
             tmp = i[5].split()
             if "coli" in tmp:
                 length.append(i[6] + ",")
-                print i[6]
                 break
     file = open('F:\Studia\Gillespie_stoch_model\lengths.txt', 'w')
     file.writelines(length)
     return length
 
 
-def count_parameters(gene_dict, sequences_lengths, average_translation_rate, kp):           #Funkcja pomocnicza pomagajaca policzyc parametry symulacji km,kp,kdm,kdp.
+def count_parameters(gene_dict, sequences_lengths, average_translation_rate, kp1 = False, kp2 = False, kp3 = False):           #Funkcja pomocnicza pomagajaca policzyc parametry symulacji km,kp,kdm,kdp.
     parameters_dict = {}
     gene_length_id = 0
     for gene in gene_dict.keys():
-        if kp == "kp1":
+        if kp1 is True:
             kp = float(sequences_lengths[gene_length_id]) / (average_translation_rate * 60)
-        elif kp == "kp2":
+            print kp
+        elif kp2 is True:
             kp = 60.0
+        else:
+            kp = (float(gene_dict[gene][2])/float(gene_dict[gene][0]))*float(gene_dict[gene][1])
+            print("%", kp)
         kdm = 1 / float(gene_dict[gene][1])
         km = float(gene_dict[gene][0]) * kdm
         kdp = 1.0/150
@@ -97,7 +101,7 @@ def count_parameters(gene_dict, sequences_lengths, average_translation_rate, kp)
     return parameters_dict
 
 
-def kp1_to_excel(gene_parameters_list, genel_list):
+def kp_to_excel(gene_parameters_list, genel_list, kp):
     column = []
     i = 0
     file = pd.read_excel(r'F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
@@ -108,7 +112,7 @@ def kp1_to_excel(gene_parameters_list, genel_list):
         else:
             column.append(gene_parameters_list[val][1])
             i += 1
-    df['kp1'] = column
+    df[kp] = column
     df.to_excel('F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
 
 
@@ -179,13 +183,32 @@ def ergodicity_check(gene_name, data_set):                      #Do poprawy
 
 
 average_translation_rate = 8.0
-data, genel_list = open_excel_file()                                        # Read data from excel table
-sequences_length = open_sequences_length_file()                 # Read data from sequence's lengths file
-gene_parameters_dict = count_parameters(data, sequences_length, average_translation_rate, "kp2")       # Create dictionary that contains name of gene and parameters for simulation
-#kp1_to_excel(gene_parameters_dict, genel_list)                 # Export values of kp1 to S6 Table
+data, genel_list = open_excel_file()     # Read data from excel table
 
-for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
-    simple_simulation(gene, gene_parameters_dict)
+sequences_length = open_sequences_length_file()                 # Read data from sequence's lengths file
+gene_parameters_dict1 = count_parameters(data, sequences_length, average_translation_rate, True, False, False)
+gene_parameters_dict3 = count_parameters(data, sequences_length, average_translation_rate, False, False, True)       # Create dictionary that contains name of gene and parameters for simulation
+
+
+kp_to_excel(gene_parameters_dict1, genel_list, 'kp1')                 # Export values of kp1 to S6 Table
+kp_to_excel(gene_parameters_dict3, genel_list, 'kp3')
+kp1 = []
+kp3 = []
+
+
+for gene in gene_parameters_dict1.keys():
+    kp1.append(gene_parameters_dict1[gene][1])
+for gene in gene_parameters_dict3.keys():
+    kp3.append(gene_parameters_dict3[gene][1])
+kp2 = [60.0]*len(kp1)
+print(len(kp2))
+mplt.scatter(kp1, kp3)
+mplt.plot(kp1, kp2, color='r')
+mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot k1 k3.png")
+mplt.show()
+
+#for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
+ #   simple_simulation(gene, gene_parameters_dict)
 
 
 
