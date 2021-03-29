@@ -87,12 +87,10 @@ def count_parameters(gene_dict, sequences_lengths, average_translation_rate, kp1
     for gene in gene_dict.keys():
         if kp1 is True:
             kp = float(sequences_lengths[gene_length_id]) / (average_translation_rate * 60)
-            print kp
         elif kp2 is True:
             kp = 60.0
         else:
-            kp = (float(gene_dict[gene][2])/float(gene_dict[gene][0]))*float(gene_dict[gene][1])
-            print("%", kp)
+            kp = float(gene_dict[gene][2])/(float(gene_dict[gene][0])*150.0)
         kdm = 1 / float(gene_dict[gene][1])
         km = float(gene_dict[gene][0]) * kdm
         kdp = 1.0/150
