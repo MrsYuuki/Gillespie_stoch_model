@@ -138,17 +138,17 @@ def simple_simulation(gene_name, data_set):                         #Funkcja prz
     x, y = GammaDis(data_set[gene_name][0], data_set[gene_name][1], data_set[gene_name][2], data_set[gene_name][3], max_val)
     smod2.PlotSpeciesTimeSeries()
     stochpy.plt.title("PlotSpecies, gene %s, b=%s" % (gene_name, burst_size))
-    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for genes, kp2\PlotSpecies %s.png" % gene_name, format='png')
+    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for genes, kp3\PlotSpecies %s.png" % gene_name, format='png')
     stochpy.plt.show()
 
     smod2.PlotSpeciesDistributions(species2plot='P')
     stochpy.plt.step(x, y, color='r')
     stochpy.plt.title("Histogram of protein, gene %s, b=%s" % (gene_name, burst_size))
-    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\Histogram of protein, kp2\Histogram %s.png" % gene_name, format='png')
+    stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\Histogram of protein, kp3\Histogram %s.png" % gene_name, format='png')
     stochpy.plt.show()
 
 
-def ergodicity_check(gene_name, data_set):                      #Do poprawy
+def ergodicity_check(gene_name, data_set):                      
     smod = stochpy.SSA(IsInteractive=False)
     smod.Model("Double_step.psc")
     smod.Model(model_file="Double_step.psc", dir="C:\Stochpy\pscmodels")
@@ -197,6 +197,17 @@ def draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3):
     mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot k1 k3.png")
     mplt.show()
 
+    fig, axes = mplt.subplots(1, 2, figsize=(10, 4))
+    axes[0].scatter(kp1, kp3, label='Scatterplot of k1 and k3')
+    axes[0].plot(kp1, kp2, color='r', label='kp2')
+    axes[0].set_title('skala liniowa')
+    axes[1].scatter(kp1, kp3, label='Scatterplot of k1 and k3')
+    axes[1].plot(kp1, kp2, color='r', label='kp2')
+    axes[1].set_yscale("log")
+    axes[1].set_xscale("log")
+    axes[1].set_title("Skala log-log")
+    mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot_and_loglog.png")
+    mplt.show()
 
 average_translation_rate = 8.0
 data, genel_list = open_excel_file()     # Read data from excel table
@@ -206,12 +217,12 @@ gene_parameters_dict1 = count_parameters(data, sequences_length, average_transla
 gene_parameters_dict3 = count_parameters(data, sequences_length, average_translation_rate, False, False, True)       # Create dictionary that contains name of gene and parameters for simulation
 
 
-kp_to_excel(gene_parameters_dict1, genel_list, 'kp1')                 # Export values of kp1 to S6 Table
-kp_to_excel(gene_parameters_dict3, genel_list, 'kp3')
+#kp_to_excel(gene_parameters_dict1, genel_list, 'kp1')                 # Export values of kp1 to S6 Table
+#kp_to_excel(gene_parameters_dict3, genel_list, 'kp3')
 
-draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3)
-#for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
- #   simple_simulation(gene, gene_parameters_dict)
+#draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3)
+for gene in gene_parameters_dict3.keys():                        # Do simulation for all genes
+    simple_simulation(gene, gene_parameters_dict3)
 
 
 
