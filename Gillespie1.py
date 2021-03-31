@@ -18,6 +18,33 @@ def GammaDis(km, kp, kdm, kdp, max_val):         #Funkcja do obliczania rozkladu
     return xv, yv
 
 
+def Gammas_fit(gene_name, gene):
+        km = float(gene[0])
+        kp = float(gene[1])
+        kdm = float(gene[2])
+        kdp = float(gene[3])
+        a = km / kdp
+        b = kp / kdm
+        A = float(gene[4])
+        B = float(gene[5])
+
+        xv = np.linspace(0, 400, 1000)
+        yv = []
+        Yv = []
+        for x in xv:
+            p = x ** (a - 1) * mpmath.exp(-x / b) / ((b ** a) * mpmath.mp.gamma(a))
+            yv.append(p)
+            pv = x ** (A - 1) * mpmath.exp(-x / B) / ((B ** A) * mpmath.mp.gamma(A))
+            Yv.append(pv)
+
+        mplt.plot(xv, yv, label= "P(a,b)")
+        mplt.plot(xv, Yv, color='r', label="P(A,B)")
+        mplt.title("Gammas_fit for %s" % gene_name)
+        mplt.legend()
+        mplt.savefig("F:\Studia\Gillespie_stoch_model\Gamma_fit_kp3\%s.png" % gene_name)
+        mplt.show()
+
+
 def Last_values_ofTrajectories(trajectories, model):       #Funkkcja wydobywajace ostatnie wartosci natezenia bialek w trajektorii.
     last_trajectory_values = []
     for trajectory in range(1,trajectories+1):
@@ -46,11 +73,11 @@ def open_excel_file():
     gene_dict = {}
     gene_list = {}
     file = pd.read_excel(r'F:\Studia\Gillespie_stoch_model\NIHMS211541-supplement-TableS6.xls')
-    df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq', 'Mean_Protein'])
+    df = pd.DataFrame(file, columns=['Gene Name', 'Mean_RNAseq', 'Life time_RNAseq', 'Mean_Protein', 'A_Protein', 'B_Protein'])
     df = df.rename(columns={'Gene Name': 'Gene', 'Life time_RNAseq':'Lifetime'})
     for index, rows in df.iterrows():
         if rows.isnull().values.any() == False:
-            gene_dict[rows.Gene] = [rows.Mean_RNAseq, rows.Lifetime, rows.Mean_Protein]
+            gene_dict[rows.Gene] = [rows.Mean_RNAseq, rows.Lifetime, rows.Mean_Protein, rows.A_Protein, rows.B_Protein]
             gene_list[rows.Gene] = True
         else:
             gene_list[rows.Gene] = False
@@ -81,7 +108,7 @@ def get_sequences_lengths(gene_dict):           # Get length of protein (E.Coli)
     return length
 
 
-def count_parameters(gene_dict, sequences_lengths, average_translation_rate, kp1 = False, kp2 = False, kp3 = False):           #Funkcja pomocnicza pomagajaca policzyc parametry symulacji km,kp,kdm,kdp.
+def count_parameters(gene_dict, sequences_lengths, average_translation_rate, kp1=False, kp2=False, kp3=False):           #Funkcja pomocnicza pomagajaca policzyc parametry symulacji km,kp,kdm,kdp.
     parameters_dict = {}
     gene_length_id = 0
     for gene in gene_dict.keys():
@@ -94,7 +121,9 @@ def count_parameters(gene_dict, sequences_lengths, average_translation_rate, kp1
         kdm = 1 / float(gene_dict[gene][1])
         km = float(gene_dict[gene][0]) * kdm
         kdp = 1.0/150
-        parameters_dict[gene] = [km, kp, kdm, kdp]
+        A = float(gene_dict[gene][3])
+        B = float(gene_dict[gene][4])
+        parameters_dict[gene] = [km, kp, kdm, kdp, A, B]
         gene_length_id += 1
     return parameters_dict
 
@@ -148,7 +177,7 @@ def simple_simulation(gene_name, data_set):                         #Funkcja prz
     stochpy.plt.show()
 
 
-def ergodicity_check(gene_name, data_set):                      
+def ergodicity_check(gene_name, data_set):
     smod = stochpy.SSA(IsInteractive=False)
     smod.Model("Double_step.psc")
     smod.Model(model_file="Double_step.psc", dir="C:\Stochpy\pscmodels")
@@ -222,7 +251,4 @@ gene_parameters_dict3 = count_parameters(data, sequences_length, average_transla
 
 #draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3)
 for gene in gene_parameters_dict3.keys():                        # Do simulation for all genes
-    simple_simulation(gene, gene_parameters_dict3)
-
-
-
+    Gammas_fit(gene, gene_parameters_dict3[gene])
