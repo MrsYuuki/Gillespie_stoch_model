@@ -180,6 +180,24 @@ def ergodicity_check(gene_name, data_set):                      #Do poprawy
     stochpy.plt.show()
 
 
+def draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3):
+    kp1 = []
+    kp3 = []
+    for gene in gene_parameters_dict1.keys():
+        kp1.append(gene_parameters_dict1[gene][1])
+    for gene in gene_parameters_dict3.keys():
+        kp3.append(gene_parameters_dict3[gene][1])
+    kp2 = [60.0] * len(kp1)
+    print(len(kp2))
+    mplt.scatter(kp1, kp3, label='Scatterplot of k1 and k3')
+    mplt.plot(kp1, kp2, color='r', label='kp2')
+    mplt.xlabel("kp1 in aa/min")
+    mplt.ylabel("kp3 in aa/min")
+    mplt.legend()
+    mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot k1 k3.png")
+    mplt.show()
+
+
 average_translation_rate = 8.0
 data, genel_list = open_excel_file()     # Read data from excel table
 
@@ -190,21 +208,8 @@ gene_parameters_dict3 = count_parameters(data, sequences_length, average_transla
 
 kp_to_excel(gene_parameters_dict1, genel_list, 'kp1')                 # Export values of kp1 to S6 Table
 kp_to_excel(gene_parameters_dict3, genel_list, 'kp3')
-kp1 = []
-kp3 = []
 
-
-for gene in gene_parameters_dict1.keys():
-    kp1.append(gene_parameters_dict1[gene][1])
-for gene in gene_parameters_dict3.keys():
-    kp3.append(gene_parameters_dict3[gene][1])
-kp2 = [60.0]*len(kp1)
-print(len(kp2))
-mplt.scatter(kp1, kp3)
-mplt.plot(kp1, kp2, color='r')
-mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot k1 k3.png")
-mplt.show()
-
+draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3)
 #for gene in gene_parameters_dict.keys():                        # Do simulation for all genes
  #   simple_simulation(gene, gene_parameters_dict)
 
