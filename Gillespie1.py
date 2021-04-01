@@ -15,20 +15,11 @@ def GammaDis(km, kp, kdm, kdp, max_val):         #Funkcja do obliczania rozkladu
         p = x**(a-1)*mpmath.exp(-x/b)/((b**a)*mpmath.mp.gamma(a))
         yv.append(p)
     print "Srednia czestosc burstow: ",a, " Sredni rozmiar burstow: ",b
-    return xv, yv
+    return xv, yv, a, b
 
 
-def Gammas_fit(gene_name, gene):
-        km = float(gene[0])
-        kp = float(gene[1])
-        kdm = float(gene[2])
-        kdp = float(gene[3])
-        a = km / kdp
-        b = kp / kdm
-        A = float(gene[4])
-        B = float(gene[5])
-
-        xv = np.linspace(0, 400, 1000)
+def Gammas_fit(gene_name, a, b, A, B, max_value):
+        xv = np.linspace(0, max_value, 1000)
         yv = []
         Yv = []
         for x in xv:
@@ -39,6 +30,8 @@ def Gammas_fit(gene_name, gene):
 
         mplt.plot(xv, yv, label= "P(a,b)")
         mplt.plot(xv, Yv, color='r', label="P(A,B)")
+        mplt.ylabel("PMF")
+        mplt.xlabel("Copy number")
         mplt.title("Gammas_fit for %s" % gene_name)
         mplt.legend()
         mplt.savefig("F:\Studia\Gillespie_stoch_model\Gamma_fit_kp3\%s.png" % gene_name)
@@ -164,7 +157,10 @@ def simple_simulation(gene_name, data_set):                         #Funkcja prz
             max_val = i[3]
     max_val = int(mpmath.ceil(max_val))
 
-    x, y = GammaDis(data_set[gene_name][0], data_set[gene_name][1], data_set[gene_name][2], data_set[gene_name][3], max_val)
+    x, y, a, b = GammaDis(data_set[gene_name][0], data_set[gene_name][1], data_set[gene_name][2], data_set[gene_name][3], max_val)
+
+    Gammas_fit(gene_name, a, b, data_set[gene_name][4], data_set[gene_name][5], max_val)
+
     smod2.PlotSpeciesTimeSeries()
     stochpy.plt.title("PlotSpecies, gene %s, b=%s" % (gene_name, burst_size))
     stochpy.plt.savefig("F:\Studia\Gillespie_stoch_model\PlotSpecies for genes, kp3\PlotSpecies %s.png" % gene_name, format='png')
@@ -226,17 +222,18 @@ def draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3):
     mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot k1 k3.png")
     mplt.show()
 
-    fig, axes = mplt.subplots(1, 2, figsize=(10, 4))
-    axes[0].scatter(kp1, kp3, label='Scatterplot of k1 and k3')
-    axes[0].plot(kp1, kp2, color='r', label='kp2')
-    axes[0].set_title('skala liniowa')
-    axes[1].scatter(kp1, kp3, label='Scatterplot of k1 and k3')
-    axes[1].plot(kp1, kp2, color='r', label='kp2')
-    axes[1].set_yscale("log")
-    axes[1].set_xscale("log")
-    axes[1].set_title("Skala log-log")
-    mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot_and_loglog.png")
+    mplt.scatter(kp1, kp3, label='Scatterplot of k1 and k3')
+    mplt.plot(kp1, kp2, color='r', label='kp2')
+
+    mplt.xscale("log")
+    mplt.yscale("log")
+    mplt.ylim(0.5, 200)
+    mplt.xlabel("kp1 in aa/min")
+    mplt.ylabel("kp3 in aa/min")
+    mplt.legend()
+    mplt.savefig("F:\Studia\Gillespie_stoch_model\Scatterplot loglog.png")
     mplt.show()
+
 
 average_translation_rate = 8.0
 data, genel_list = open_excel_file()     # Read data from excel table
@@ -249,6 +246,6 @@ gene_parameters_dict3 = count_parameters(data, sequences_length, average_transla
 #kp_to_excel(gene_parameters_dict1, genel_list, 'kp1')                 # Export values of kp1 to S6 Table
 #kp_to_excel(gene_parameters_dict3, genel_list, 'kp3')
 
-#draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3)
-for gene in gene_parameters_dict3.keys():                        # Do simulation for all genes
-    Gammas_fit(gene, gene_parameters_dict3[gene])
+draw_scatterplot(gene_parameters_dict1, gene_parameters_dict3)
+#for gene in gene_parameters_dict3.keys():                        # Do simulation for all genes
+ #   simple_simulation(gene, gene_parameters_dict3)
